@@ -28,7 +28,7 @@ You will need to have a _second monitor_ with this setup. You could try to setup
 
 ### Primary GPU for Host
 
-- [Asus Prime GeForce RTX 5060 8 GB OC Edition]([https://www.zotac.com/us/product/graphics_card/gtx-970#spec](https://www.asus.com/es/motherboards-components/graphics-cards/prime/prime-rtx5060-o8g/)) - 145w
+- [Asus Prime GeForce RTX 5060 8 GB OC Edition](https://www.asus.com/es/motherboards-components/graphics-cards/prime/prime-rtx5060-o8g/) - 145w
 
 ### Secondary GPU for VM
 
