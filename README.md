@@ -62,7 +62,7 @@ Run, edit and save with:
 
 ## Steps for AMD CPU (Not tested on my side)
 
-### Ensure CPU has IOMMU enabled
+## Ensure CPU has IOMMU enabled
 
 This should already be enabled for AMD CPUs. Either way, you'll want to do this.
 
