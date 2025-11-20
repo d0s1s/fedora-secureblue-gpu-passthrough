@@ -41,9 +41,7 @@ You will need to have a _second monitor_ with this setup. You could try to setup
 
 Run this grep command to find if your CPU has virtualization enabled.
 
-```bash
-sudo grep --color --regexp vmx --regexp svm /proc/cpuinfo
-```
+`run0 grep --color --regexp vmx --regexp svm /proc/cpuinfo`
 
 If there is no result, make sure to enable `VT-d` for Intel or `AMD-V` for AMD based motherboards. Consult your hardware's instructions on how to do that.
 
@@ -53,15 +51,13 @@ If there is no result, make sure to enable `VT-d` for Intel or `AMD-V` for AMD b
 
 Make sure to set:
 
-```iommu=force intel_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci
-```
+`iommu=force intel_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci`
 
 as a Kernel parameter.
 
 Run, edit and save with:
 
-```rpm-ostree kargs --editor
-```
+`rpm-ostree kargs --editor`
 
 
 ## Steps for AMD CPU (Not tested on my side)
@@ -70,16 +66,13 @@ Run, edit and save with:
 
 This should already be enabled for AMD CPUs. Either way, you'll want to do this.
 
-```iommu=force amd_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci
-```
+`iommu=force amd_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci`
 
 ### Check PCI Bus Groups
 
-
-
 You can get the device IDs using `lspci`. In this case, I'm looking for my NVIDIA card to pass-through.
 
-```bash
+```
 ➜  ~ 
 > lspci -vnn | grep -i --regexp NVIDIA
 01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GB206 [GeForce RTX 5060] [10de:2d05] (rev a1) (prog-if 00 [VGA controller])
@@ -96,10 +89,9 @@ You can get the device IDs using `lspci`. In this case, I'm looking for my NVIDI
 
 Now we'll setup the Kernel Args for disabling the PCI Buses for the GPU.
 
-```bash
+```
 rpm-ostree kargs --editor \
   "vfio-pci.ids=10de:2d05,10de:22eb"
-
 ```
 
 Then perform a `run0 nano /etc/dracut.conf.d/10-vfio.conf`and add these lines:
