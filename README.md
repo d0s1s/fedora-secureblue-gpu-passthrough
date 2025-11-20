@@ -62,13 +62,13 @@ Run, edit and save with:
 
 ## Steps for AMD CPU (Not tested on my side)
 
-## Ensure CPU has IOMMU enabled
+### Ensure CPU has IOMMU enabled
 
 This should already be enabled for AMD CPUs. Either way, you'll want to do this.
 
 `iommu=force amd_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci`
 
-### Check PCI Bus Groups
+## Check PCI Bus Groups
 
 You can get the device IDs using `lspci`. In this case, I'm looking for my NVIDIA card to pass-through.
 
