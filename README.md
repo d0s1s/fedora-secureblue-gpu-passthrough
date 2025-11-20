@@ -1,4 +1,4 @@
-# GPU PCI-Passthrough on Silverblue
+# GPU PCI-Passthrough on Secure Blue
 
 ## Overview
 
@@ -17,17 +17,22 @@ Fedora Discussions
 
 - [Fedora Discussions: GPU Pass-through on Silverblue](https://discussion.fedoraproject.org/t/gpu-pci-passthrough-with-silverblue-kinoite/45271)
 
+Secure Blue Discussions
+
+- [[Working] GPU Passthrough with Virt - Manager](https://discord.com/channels/1202086019298500629/1439321824251875619)
+
+
 ## Hardware
 
 You will need to have a _second monitor_ with this setup. You could try to setup _Looking Glass_ or _Sunshine+Moonlight_ if you wanted to.
 
 ### Primary GPU for Host
 
-- [MSI Radeon RX 6700 XT MECH 2X 12G OC](https://us.msi.com/Graphics-Card/Radeon-RX-6700-XT-MECH-2X-12G-OC)
+- [Palit KalmX Fanless GeForce RTX 3060 6 GB](https://us.msi.com/Graphics-Card/Radeon-RX-6700-XT-MECH-2X-12G-OC)
 
 ### Secondary GPU for VM
 
-* [Zotac GTX 970 Dual Fan](https://www.zotac.com/us/product/graphics_card/gtx-970#spec) - 145w
+* [Asus Prime GeForce RTX 5060 8 GB OC Edition](https://www.zotac.com/us/product/graphics_card/gtx-970#spec) - 145w
 
 ## Preliminary Checks
 
@@ -42,125 +47,76 @@ sudo grep --color --regexp vmx --regexp svm /proc/cpuinfo
 
 If there is no result, make sure to enable `VT-d` for Intel or `AMD-V` for AMD based motherboards. Consult your hardware's instructions on how to do that.
 
-You may need to remove some Nvidia specific options if you had once used an Nvidia GPU.
-
-```bash
-sudo rpm-ostree kargs \
-  --delete-if-present=rd.driver.blacklist=nouveau \
-  --delete-if-present=modprobe.blacklist=nouveau \
-  --delete-if-present=nvidia-drm.modeset=1 \
-  --reboot
-```
-
 ## Steps for Intel CPU
 
 ### Ensure CPU has IOMMU enabled
 
-Run the following command.
+Make sure to set:
 
-```bash
-dmesg | grep -i -e DMAR -e IOMMU
+```iommu=force intel_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci
 ```
 
-If this doesn't show, make sure to set:
+as a Kernel parameter.
 
-```bash
-sudo rpm-ostree kargs \
-  --append-if-missing="intel_iommu=on" \
-  --append-if-missing="iommu=pt" \
-  --append-if-missing="rd.driver.pre=vfio_pci" \
-  --reboot
+Run, edit and save with:
+
+```rpm-ostree kargs --editor
 ```
 
-as a Kernel parameter
 
-## Steps for AMD CPU
+## Steps for AMD CPU (Not tested on my side)
 
 ### Ensure CPU has IOMMU enabled
 
-Run the following command.
-
-```bash
-dmesg | grep -i -e DMAR -e IOMMU
-```
-
 This should already be enabled for AMD CPUs. Either way, you'll want to do this.
 
-```bash
-sudo rpm-ostree kargs \
-  --append-if-missing="amd_iommu=on" \
-  --append-if-missing="iommu=pt" \
-  --append-if-missing="rd.driver.pre=vfio_pci" \
-  --reboot
+```iommu=force amd_iommu=on iommu.passthrough=1 iommu.strict=1 rd.driver.pre=vfio_pci
 ```
 
 ### Check PCI Bus Groups
 
-```bash
-#!/usr/bin/env bash
 
-shopt -s nullglob
-for g in $(find /sys/kernel/iommu_groups/* -maxdepth 0 -type d | sort -V); do
-    echo "IOMMU Group ${g##*/}:"
-    for d in $g/devices/*; do
-        echo -e "\t$(lspci -nns ${d##*/})"
-    done;
-done;
-```
 
-It should spit out stuff that looks like this...
-
-```bash
-➜  ~ 
-> bash ./02-check-pci-bus-groups.sh
-IOMMU Group 0:
-	00:01.0 Host bridge [0600]: Advanced Micro Devices, Inc. [AMD] Starship/Matisse PCIe Dummy Host Bridge [1022:1482]
-IOMMU Group 1:
-	00:01.1 PCI bridge [0604]: Advanced Micro Devices, Inc. [AMD] Starship/Matisse GPP Bridge [1022:1483]
-[...lots of output...]
-
-IOMMU Group 32:
-	0d:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 22 [Radeon RX 6700/6700 XT/6750 XT / 6800M] [1002:73df] (rev c1)
-IOMMU Group 33:
-	0d:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 21/23 HDMI/DP Audio Controller [1002:ab28]
-
-IOMMU Group 34:
-	0e:00.0 VGA compatible controller [0300]: NVIDIA Corporation GM204 [GeForce GTX 970] [10de:13c2] (rev a1)
-	0e:00.1 Audio device [0403]: NVIDIA Corporation GM204 High Definition Audio Controller [10de:0fbb] (rev a1)
-[...more output...]
-```
-
-You can also get the device IDs using `lspci`. In this case, I'm looking for my NVIDIA card to pass-through.
+You can get the device IDs using `lspci`. In this case, I'm looking for my NVIDIA card to pass-through.
 
 ```bash
 ➜  ~ 
 > lspci -vnn | grep -i --regexp NVIDIA
-0e:00.0 VGA compatible controller [0300]: NVIDIA Corporation GM204 [GeForce GTX 970] [10de:13c2] (rev a1) (prog-if 00 [VGA controller])
-
-0e:00.1 Audio device [0403]: NVIDIA Corporation GM204 High Definition Audio Controller [10de:0fbb] (rev a1)
-
-➜  ~ 
-> lspci -vnn | grep -i --regexp Radeon
-0d:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 22 [Radeon RX 6700/6700 XT/6750 XT / 6800M] [1002:73df] (rev c1) (prog-if 00 [VGA controller])
+01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GB206 [GeForce RTX 5060] [10de:2d05] (rev a1) (prog-if 00 [VGA controller])
+	Kernel driver in use: nvidia
+	Kernel modules: nouveau, nvidia_drm, nvidia
+01:00.1 Audio device [0403]: NVIDIA Corporation GB206 High Definition Audio Controller [10de:22eb] (rev a1)
+	Subsystem: NVIDIA Corporation Device [10de:0000]
+06:00.0 VGA compatible controller [0300]: NVIDIA Corporation GA107 [GeForce RTX 3050 6GB] [10de:2584] (rev a1) (prog-if 00 [VGA controller])
+	Subsystem: NVIDIA Corporation GA107 [GeForce RTX 3050 6GB] [10de:2584]
+	Kernel modules: nouveau, nvidia_drm, nvidia
+06:00.1 Audio device [0403]: NVIDIA Corporation GA107 High Definition Audio Controller [10de:2291] (rev a1)
+	Subsystem: NVIDIA Corporation Device [10de:2584]
 ```
 
 Now we'll setup the Kernel Args for disabling the PCI Buses for the GPU.
 
 ```bash
-sudo rpm-ostree kargs \
-  --append-if-missing="vfio-pci.ids=10de:13c2,10de:0fbb" \
-  --reboot
+rpm-ostree kargs --editor \
+  "vfio-pci.ids=10de:2d05,10de:22eb"
+
 ```
 
-Then perform a `dracut` to make sure the _initramfs_ has the Kernel module loaded.
+Then perform a `run0 nano /etc/dracut.conf.d/10-vfio.conf`and add these lines:
+
+`force_drivers=" vfio-pci "`
+`install_optional_items+=" /usr/lib64/libno_rlimit_as.so "`
+
+Save and exit.
+
+
+to make sure the _initramfs_ has the Kernel module loaded.
 
 ```bash
-sudo rpm-ostree initramfs \
-  --enable \
-  --arg="--add-drivers" \
-  --arg="vfio-pci" \
-  --reboot
+rpm-ostree initramfs --enable
 ```
+
+And reboot.
 
 You should now see when you perform
 
@@ -172,37 +128,26 @@ Should show something similar to...
 
 ```bash
 ➜  ~ 
-> sudo lspci -vnn
-[sudo] password for filbot:
+> lspci -vnn
 [...lots of output...]
 
-0e:00.0 VGA compatible controller [0300]: NVIDIA Corporation GM204 [GeForce GTX 970] [10de:13c2] (rev a1) (prog-if 00 [VGA controller])
-	Subsystem: ZOTAC International (MCO) Ltd. Device [19da:1366]
-	Flags: bus master, fast devsel, latency 0, IRQ 255, IOMMU group 34
-	Memory at f5000000 (32-bit, non-prefetchable) [size=16M]
-	Memory at c0000000 (64-bit, prefetchable) [size=256M]
-	Memory at d0000000 (64-bit, prefetchable) [size=32M]
-	I/O ports at e000 [size=128]
-	Expansion ROM at f6000000 [disabled] [size=512K]
-	Capabilities: [60] Power Management version 3
-	Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
-	Capabilities: [78] Express Legacy Endpoint, MSI 00
-	Capabilities: [100] Virtual Channel
-	Capabilities: [250] Latency Tolerance Reporting
-	Capabilities: [258] L1 PM Substates
-	Capabilities: [128] Power Budgeting <?>
-	Capabilities: [600] Vendor Specific Information: ID=0001 Rev=1 Len=024 <?>
-	Capabilities: [900] Secondary PCI Express
+06:00.0 VGA compatible controller [0300]: NVIDIA Corporation GA107 [GeForce RTX 3050 6GB] [10de:2584] (rev a1) (prog-if 00 [VGA controller])
+	Subsystem: NVIDIA Corporation GA107 [GeForce RTX 3050 6GB] [10de:2584]
+	Flags: fast devsel, IRQ 255, IOMMU group 17
+	Memory at 79000000 (32-bit, non-prefetchable) [size=16M]
+	Memory at 40000000 (64-bit, prefetchable) [size=256M]
+	Memory at 50000000 (64-bit, prefetchable) [size=32M]
+	I/O ports at 3000 [size=128]
+	Expansion ROM at 7a000000 [disabled] [size=512K]
+	Capabilities: <access denied>
 	Kernel driver in use: vfio-pci
-	Kernel modules: nouveau
+	Kernel modules: nouveau, nvidia_drm, nvidia
 
-0e:00.1 Audio device [0403]: NVIDIA Corporation GM204 High Definition Audio Controller [10de:0fbb] (rev a1)
-	Subsystem: ZOTAC International (MCO) Ltd. Device [19da:1366]
-	Flags: bus master, fast devsel, latency 0, IRQ 131, IOMMU group 34
-	Memory at f6080000 (32-bit, non-prefetchable) [size=16K]
-	Capabilities: [60] Power Management version 3
-	Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
-	Capabilities: [78] Express Endpoint, MSI 00
+06:00.1 Audio device [0403]: NVIDIA Corporation GA107 High Definition Audio Controller [10de:2291] (rev a1)
+	Subsystem: NVIDIA Corporation Device [10de:2584]
+	Flags: fast devsel, IRQ 255, IOMMU group 17
+	Memory at 7a080000 (32-bit, non-prefetchable) [disabled] [size=16K]
+	Capabilities: <access denied>
 	Kernel driver in use: vfio-pci
 	Kernel modules: snd_hda_intel
 
@@ -229,33 +174,17 @@ drwxr-xr-x   2 root     root            0 Dec 31  1969 usr/lib/modules/6.0.15-30
 
 The `/boot/ostree/fedora-???/initramfs-x.y.z-aaa.fc??.x86_64.img` depends on what image is live. You may have two or three depending on how many backup images you keep of your _ostree_ setup.
 
-### Install bridge-utils
-
-> [!Info] Optional Stuff
-> This is entirely optional. You don't need it.
-
-- [getlabsdone.com - How to connect kvm mv to host network](https://getlabsdone.com/how-to-connect-kvm-vm-to-host-network/)
-- [getlabsdone.com - How to create a Bridge on Fedora](https://getlabsdone.com/how-to-create-a-bridge-interface-in-centos-redhat-linux/)
-
-On Fedora, I installed _bridge-utils_.
-
-```bash
-sudo rpm-ostree install bridge-utils --reboot
-```
-
-Then follow the blogs listed. However, this will make your host present a different IP address and route traffic differently. I think my issue for my Windows VM was the disk size. See setting up the Virtual Machine further on.
 
 ## Setup the Virtual Machine
 
 In this we're using `qemu-kvm` with `virt-manager` as a GUI to help us.
 
-As of this writing, I'm using `qemu-kvm` version `7.0.0`. This should be sufficient.
+As of this writing, I'm using `qemu-kvm` version `7.0.1`. This should be sufficient.
 
 ```bash
 ➜  ~ 
 > qemu-kvm --version
-QEMU emulator version 7.0.0 (qemu-7.0.0-12.fc37)
-Copyright (c) 2003-2022 Fabrice Bellard and the QEMU Project developers
+QEMU emulator version 10.1.2 (qemu-10.1.2-1.fc43)
 ```
 
 ### Download Windows 10 ISO
