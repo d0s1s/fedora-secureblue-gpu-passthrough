@@ -214,12 +214,7 @@ Setup Windows as you can do the best. I had to move my monitor, then adjust the 
 
 ### Modify the Domain XML
 
-Domain is what `virsh` calls a Virtual Machine. We'll edit the XML for the VM. I use the Neovim Flatpak.
-
-```bash
-EDITOR=io.neovim.nvim virsh \
-  --connect=qemu:///system edit Windows-Gaming
-```
+I am using Virt Manger.
 
 Here, we'll insert the few elements.
 
