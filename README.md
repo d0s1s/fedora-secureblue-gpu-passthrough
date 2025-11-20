@@ -28,11 +28,11 @@ You will need to have a _second monitor_ with this setup. You could try to setup
 
 ### Primary GPU for Host
 
-- [Palit KalmX Fanless GeForce RTX 3060 6 GB](https://us.msi.com/Graphics-Card/Radeon-RX-6700-XT-MECH-2X-12G-OC)
+- [Asus Prime GeForce RTX 5060 8 GB OC Edition]([https://www.zotac.com/us/product/graphics_card/gtx-970#spec](https://www.asus.com/es/motherboards-components/graphics-cards/prime/prime-rtx5060-o8g/)) - 145w
 
 ### Secondary GPU for VM
 
-* [Asus Prime GeForce RTX 5060 8 GB OC Edition](https://www.zotac.com/us/product/graphics_card/gtx-970#spec) - 145w
+* [Palit KalmX Fanless GeForce RTX 3060 6 GB](https://www.palit.com/palit/vgapro.php?id=5147&lang=esla)
 
 ## Preliminary Checks
 
@@ -91,7 +91,7 @@ Now we'll setup the Kernel Args for disabling the PCI Buses for the GPU.
 
 ```
 rpm-ostree kargs --editor \
-  "vfio-pci.ids=10de:2d05,10de:22eb"
+  "vfio-pci.ids=10de:2584,10de:2291"
 ```
 
 Then perform a `run0 nano /etc/dracut.conf.d/10-vfio.conf`and add these lines:
